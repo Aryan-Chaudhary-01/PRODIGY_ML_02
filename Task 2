@@ -1,0 +1,57 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+data = pd.read_csv('customer_purchase_history.csv')
+
+# Display the first few rows of the dataset
+print(data.head())
+
+# Handle missing values (if any)
+data = data.dropna()
+
+# Select relevant features for clustering
+features = ['total_purchase_amount', 'number_of_purchases', 'average_purchase_value']
+
+# Standardize the features
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(data[features])
+
+# Determine the optimal number of clusters using the elbow method
+wcss = []
+for i in range(1, 11):
+    kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=42)
+    kmeans.fit(scaled_features)
+    wcss.append(kmeans.inertia_)
+
+# Plot the elbow graph
+plt.figure(figsize=(10, 6))
+plt.plot(range(1, 11), wcss, marker='o', linestyle='--')
+plt.title('Elbow Method')
+plt.xlabel('Number of clusters')
+plt.ylabel('WCSS')
+plt.show()
+
+# From the elbow plot, choose the optimal number of clusters (e.g., k=4)
+optimal_clusters = 4
+
+# Apply K-means clustering
+kmeans = KMeans(n_clusters=optimal_clusters, init='k-means++', max_iter=300, n_init=10, random_state=42)
+data['Cluster'] = kmeans.fit_predict(scaled_features)
+
+# Display the cluster centers
+print("Cluster Centers:")
+print(scaler.inverse_transform(kmeans.cluster_centers_))
+
+# Visualize the clusters
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=data, x='total_purchase_amount', y='average_purchase_value', hue='Cluster', palette='viridis')
+plt.title('Customer Clusters')
+plt.xlabel('Total Purchase Amount')
+plt.ylabel('Average Purchase Value')
+plt.legend()
+plt.show()
